@@ -832,7 +832,7 @@ func (cs *State) enterNewRound(height int64, round int) {
 	validators := cs.Validators
 	if cs.Round < round {
 		validators = validators.Copy()
-		validators.IncrementProposerPriority(round - cs.Round)
+		validators.IncrementProposerPriority(round-cs.Round, cs.state.LastBlockID)
 	}
 
 	// Setup new round

@@ -211,7 +211,9 @@ func LoadValidators(db dbm.DB, height int64) (*types.ValidatorSet, error) {
 				),
 			)
 		}
-		valInfo2.ValidatorSet.IncrementProposerPriority(int(height - lastStoredHeight)) // mutate
+
+		state := LoadState(db)
+		valInfo2.ValidatorSet.IncrementProposerPriority(int(height-lastStoredHeight), state.LastBlockID) // mutate
 		valInfo = valInfo2
 	}
 

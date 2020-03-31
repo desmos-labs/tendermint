@@ -5,7 +5,9 @@ import (
 	"fmt"
 	"math"
 	"math/big"
+	"math/rand"
 	"sort"
+	"strconv"
 	"strings"
 
 	"github.com/pkg/errors"
@@ -61,7 +63,7 @@ func NewValidatorSet(valz []*Validator) *ValidatorSet {
 		panic(fmt.Sprintf("cannot create validator set: %s", err))
 	}
 	if len(valz) > 0 {
-		vals.IncrementProposerPriority(1)
+		vals.IncrementProposerPriority(1, BlockID{})
 	}
 	return vals
 }
@@ -73,16 +75,16 @@ func (vals *ValidatorSet) IsNilOrEmpty() bool {
 
 // CopyIncrementProposerPriority increments ProposerPriority and updates the
 // proposer on a copy, and returns it.
-func (vals *ValidatorSet) CopyIncrementProposerPriority(times int) *ValidatorSet {
+func (vals *ValidatorSet) CopyIncrementProposerPriority(times int, lastBlockID BlockID) *ValidatorSet {
 	copy := vals.Copy()
-	copy.IncrementProposerPriority(times)
+	copy.IncrementProposerPriority(times, lastBlockID)
 	return copy
 }
 
 // IncrementProposerPriority increments ProposerPriority of each validator and updates the
 // proposer. Panics if validator set is empty.
 // `times` must be positive.
-func (vals *ValidatorSet) IncrementProposerPriority(times int) {
+func (vals *ValidatorSet) IncrementProposerPriority(times int, lastBlockID BlockID) {
 	if vals.IsNilOrEmpty() {
 		panic("empty validator set")
 	}
@@ -100,7 +102,15 @@ func (vals *ValidatorSet) IncrementProposerPriority(times int) {
 	var proposer *Validator
 	// Call IncrementProposerPriority(1) times times.
 	for i := 0; i < times; i++ {
-		proposer = vals.incrementProposerPriority()
+		// lastBlockID := sm.State.LastBlockID
+		hash := lastBlockID.Hash.String()
+		if hash != "" {
+			seed, _ := strconv.ParseInt(hash, 16, 64)
+			seed = seed + int64(i)
+			proposer = vals.randomizeProposer(seed)
+		} else {
+			proposer = vals.incrementProposerPriority()
+		}
 	}
 
 	vals.Proposer = proposer
@@ -129,6 +139,24 @@ func (vals *ValidatorSet) RescalePriorities(diffMax int64) {
 			val.ProposerPriority /= ratio
 		}
 	}
+}
+
+// Added for randominzing proposer at each round
+func (vals *ValidatorSet) randomizeProposer(seed int64) *Validator {
+	rand.Seed(seed)
+	var nextProposerIndex = rand.Intn(len(vals.Validators))
+	for index, val := range vals.Validators {
+		var newPrio int64
+		newPrio = -10000
+		if nextProposerIndex == index {
+			newPrio = 10000
+		}
+		val.ProposerPriority = newPrio
+	}
+
+	mostest := vals.getValWithMostPriority()
+
+	return mostest
 }
 
 func (vals *ValidatorSet) incrementProposerPriority() *Validator {

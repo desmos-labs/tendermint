@@ -403,7 +403,7 @@ func updateState(
 	}
 
 	// Update validator proposer priority and set state variables.
-	nValSet.IncrementProposerPriority(1)
+	nValSet.IncrementProposerPriority(1, state.LastBlockID)
 
 	// Update the params with the latest abciResponses.
 	nextParams := state.ConsensusParams
