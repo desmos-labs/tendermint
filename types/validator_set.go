@@ -102,8 +102,10 @@ func (vals *ValidatorSet) IncrementProposerPriority(times int, lastBlockID Block
 	var proposer *Validator
 	// Call IncrementProposerPriority(1) times times.
 	for i := 0; i < times; i++ {
-		hash := lastBlockID.Hash.String()
-		seed, _ := strconv.ParseInt(hash, 16, 64)
+		hash := lastBlockID.String()
+
+		// 13 is the 8th Fibonacci number
+		seed, _ := strconv.ParseInt(hash[0:13], 16, 64)
 		seed = seed + int64(i)
 		// randomize with the last block ID and current iteration
 		proposer = vals.randomizeProposer(seed)
