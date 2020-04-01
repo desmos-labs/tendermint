@@ -102,15 +102,11 @@ func (vals *ValidatorSet) IncrementProposerPriority(times int, lastBlockID Block
 	var proposer *Validator
 	// Call IncrementProposerPriority(1) times times.
 	for i := 0; i < times; i++ {
-		// lastBlockID := sm.State.LastBlockID
 		hash := lastBlockID.Hash.String()
-		if hash != "" {
-			seed, _ := strconv.ParseInt(hash, 16, 64)
-			seed = seed + int64(i)
-			proposer = vals.randomizeProposer(seed)
-		} else {
-			proposer = vals.incrementProposerPriority()
-		}
+		seed, _ := strconv.ParseInt(hash, 16, 64)
+		seed = seed + int64(i)
+		// randomize with the last block ID and current iteration
+		proposer = vals.randomizeProposer(seed)
 	}
 
 	vals.Proposer = proposer
@@ -147,9 +143,9 @@ func (vals *ValidatorSet) randomizeProposer(seed int64) *Validator {
 	var nextProposerIndex = rand.Intn(len(vals.Validators))
 	for index, val := range vals.Validators {
 		var newPrio int64
-		newPrio = -10000
+		newPrio = 0
 		if nextProposerIndex == index {
-			newPrio = 10000
+			newPrio = 1
 		}
 		val.ProposerPriority = newPrio
 	}
